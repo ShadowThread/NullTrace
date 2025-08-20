@@ -6,65 +6,80 @@
   <title>access.node // secure gateway</title>
   <style>
     :root {
-      --bg: #0b0f10;
+      --bg: #050807;
       --fg: #d2ffd2;
-      --muted: #88c088;
-      --accent: #7aff7a;
-      --error: #ff6b6b;
+      --muted: #7bbf7b;
+      --accent: #92ff92;
+      --error: #ff4d4d;
     }
     html, body {
       height: 100%;
       margin: 0;
-      background: radial-gradient(1200px 800px at 20% 10%, #0f1618 0%, var(--bg) 60%);
+      background: #000;
       color: var(--fg);
       font: 16px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
     }
-    .scanline:before {
+    body::before {
       content: "";
       position: fixed;
       inset: 0;
       background: repeating-linear-gradient(
         180deg,
-        rgba(255,255,255,0.03),
-        rgba(255,255,255,0.03) 1px,
+        rgba(255,255,255,0.02),
+        rgba(255,255,255,0.02) 1px,
         transparent 2px,
         transparent 4px
       );
-      pointer-events: none;
       mix-blend-mode: overlay;
+      pointer-events: none;
     }
-    .crt { filter: saturate(1.1) contrast(1.05); }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.25);
+      box-shadow: inset 0 0 150px rgba(0,0,0,0.7);
+      pointer-events: none;
+    }
+
+    .crt {
+      filter: contrast(1.05) brightness(1.1) saturate(1.2);
+      text-shadow: 0 0 3px rgba(146,255,146,0.7), 0 0 12px rgba(100,255,100,0.3);
+    }
+
     .container {
-      max-width: 920px;
+      max-width: 960px;
       margin: 0 auto;
-      padding: 32px 16px 48px;
+      padding: 32px 16px;
     }
+
     .terminal {
-      border: 1px solid #143a14;
-      border-radius: 16px;
-      background: linear-gradient(180deg, rgba(10,14,10,0.8), rgba(5,8,5,0.9));
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 0 1px #071007;
+      border: 1px solid #103010;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(10,20,10,0.9), rgba(2,4,2,0.95));
+      box-shadow: 0 15px 40px rgba(0,0,0,0.8), inset 0 0 40px rgba(10,60,10,0.4);
       overflow: hidden;
     }
+
     .terminal__header {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 12px;
-      background: #0e1610;
-      border-bottom: 1px solid #143a14;
+      padding: 10px 14px;
+      background: #081008;
+      border-bottom: 1px solid #103010;
       color: var(--muted);
-      user-select: none;
-      letter-spacing: 0.02em;
       font-size: 14px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
     }
-    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
     .dot--red { background: #ff5f56; }
     .dot--yellow { background: #ffbd2e; }
     .dot--green { background: #27c93f; }
 
-    .terminal__body { padding: 16px; min-height: 60vh; }
-    .log { white-space: pre-wrap; }
+    .terminal__body { padding: 18px; min-height: 65vh; }
+    .log { white-space: pre-wrap; line-height: 1.45; }
     .muted { color: var(--muted); }
     .accent { color: var(--accent); }
     .error { color: var(--error); }
@@ -83,32 +98,32 @@
       display: grid;
       grid-template-columns: auto 1fr;
       gap: 8px 12px;
-      align-items: center;
-      margin-top: 12px;
+      margin-top: 14px;
       max-width: 520px;
     }
     .label { color: var(--muted); }
     .input {
-      background: #0a120a;
+      background: #050b05;
       color: var(--fg);
       border: 1px solid #1e3a1e;
-      border-radius: 10px;
-      padding: 10px 12px;
-      outline: none;
+      border-radius: 8px;
+      padding: 9px 11px;
     }
-    .input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(122,255,122,0.15); }
+    .input:focus { border-color: var(--accent); box-shadow: 0 0 8px rgba(146,255,146,0.3); outline: none; }
 
     .btn {
       grid-column: 1 / -1;
+      margin-top: 4px;
       justify-self: start;
-      background: #0f2a12;
+      background: #0b2a0f;
       color: var(--fg);
       border: 1px solid #1f5a2a;
-      border-radius: 12px;
-      padding: 10px 14px;
+      border-radius: 8px;
+      padding: 9px 14px;
       cursor: pointer;
+      transition: all .2s ease;
     }
-    .btn:hover { border-color: var(--accent); }
+    .btn:hover { border-color: var(--accent); background: #123d16; }
 
     .shake { animation: shake 300ms ease-in-out; }
     @keyframes shake {
@@ -117,62 +132,45 @@
       30%, 50%, 70% { transform: translateX(-4px); }
       40%, 60% { transform: translateX(4px); }
     }
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
-    .footer { opacity: .7; font-size: 12px; margin-top: 10px; }
 
-    /* Responsivita */
+    .footer { opacity: .6; font-size: 12px; margin-top: 10px; color: var(--muted); }
+
     @media (max-width: 520px) {
-      .terminal__body { padding: 12px; }
+      .terminal__body { padding: 12px; font-size: 15px; }
     }
   </style>
 </head>
-<body class="scanline crt">
+<body class="crt">
   <div class="container">
-    <div class="terminal" role="group" aria-label="Secure terminal window">
+    <div class="terminal">
       <div class="terminal__header">
-        <span class="dot dot--red" aria-hidden="true"></span>
-        <span class="dot dot--yellow" aria-hidden="true"></span>
-        <span class="dot dot--green" aria-hidden="true"></span>
+        <span class="dot dot--red"></span>
+        <span class="dot dot--yellow"></span>
+        <span class="dot dot--green"></span>
         <span>access.node / secure gateway</span>
       </div>
       <div class="terminal__body" id="term">
-        <div id="boot" class="log" aria-live="polite" aria-atomic="false"></div>
+        <div id="boot" class="log"></div>
         <div id="authWrap" style="display:none">
-          <div class="log">
-            <span class="muted">auth@node</span>:<span class="accent">~</span>$ login
-          </div>
+          <div class="log"><span class="muted">auth@node</span>:<span class="accent">~</span>$ login</div>
           <form class="auth" id="auth" autocomplete="off">
             <label for="u" class="label">uživatel</label>
-            <input id="u" name="u" class="input" inputmode="text" spellcheck="false" autocapitalize="none" required aria-describedby="u-hint" />
-            <div id="u-hint" class="sr-only">Zadejte uživatelské jméno</div>
-
+            <input id="u" name="u" class="input" spellcheck="false" autocapitalize="none" required />
             <label for="p" class="label">heslo</label>
-            <input id="p" name="p" class="input" type="password" required aria-describedby="p-hint" />
-            <div id="p-hint" class="sr-only">Zadejte heslo</div>
-
+            <input id="p" name="p" class="input" type="password" required />
             <button class="btn" type="submit">ověřit</button>
           </form>
-          <div id="authLog" class="log" aria-live="polite"></div>
-          <div class="footer muted">Tip: <span class="accent">Ctrl/⌘+L</span> vymaže vstupní pole.</div>
+          <div id="authLog" class="log"></div>
+          <div class="footer">Tip: <span class="accent">Ctrl/⌘+L</span> vymaže vstupní pole.</div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // =========================
-    // KONFIGURACE
-    // =========================
-    // Cíl pro přesměrování po úspěšném loginu — upravte na finální URL/stránku další hádanky.
-    const NEXT_URL = "next.html"; // např. "https://your-domain.xyz/phase-2"
-
-    // SHA-256 hash pro řetězec "uživatel:heslo" (bez uvozovek).
-    // Hash vytvořen pro: "The.Unknown.Step:9sctci10xu"
+    const NEXT_URL = "next.html";
     const VALID_HASH = "a2c9ab2ea278850daef237f8d2849c4a12fbfbcfb198fa12008d88ba50af29ed";
 
-    // =========================
-    // BOOT SEKQUENCE (efekt psaní)
-    // =========================
     const bootLines = [
       "[BOOT] Initializing secure node...",
       "[OK] Kernel integrity: verified",
@@ -192,8 +190,7 @@
     const uEl = document.getElementById('u');
     const pEl = document.getElementById('p');
 
-    // Typing effect
-    async function typeLine(text, el, speedMin = 10, speedMax = 28) {
+    async function typeLine(text, el, speedMin = 15, speedMax = 35) {
       for (let i = 0; i < text.length; i++) {
         el.textContent += text[i];
         await new Promise(r => setTimeout(r, Math.random() * (speedMax - speedMin) + speedMin));
@@ -205,53 +202,37 @@
       for (const line of bootLines) {
         await typeLine(line, bootEl);
       }
-      // Reveal auth
       authWrap.style.display = '';
-      // Focus username
       uEl.focus();
     })();
 
-    // Utility: SHA-256 to hex
     async function sha256Hex(str) {
-      const enc = new TextEncoder();
-      const data = enc.encode(str);
+      const data = new TextEncoder().encode(str);
       const hash = await crypto.subtle.digest('SHA-256', data);
-      const bytes = new Uint8Array(hash);
-      let hex = '';
-      for (const b of bytes) hex += b.toString(16).padStart(2, '0');
-      return hex;
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
     }
 
-    // Form submit handler
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      logEl.textContent = '';
       const u = (uEl.value || '').trim();
       const p = pEl.value || '';
-
-      // Short UX nicety: clear log
-      logEl.textContent = '';
-
-      // Compute hash and compare
       const h = await sha256Hex(`${u}:${p}`);
 
       if (h === VALID_HASH) {
         appendLine(`[AUTH] user '${u}' accepted`);
         appendLine(`[ACCESS] granted`);
-        setTimeout(() => {
-          window.location.assign(NEXT_URL);
-        }, 700);
+        setTimeout(() => window.location.assign(NEXT_URL), 1000);
       } else {
         termError(`[AUTH] invalid credentials for '${u || 'anonymous'}'`);
-        // visual feedback
         form.classList.remove('shake');
-        void form.offsetWidth; // restart animation
+        void form.offsetWidth;
         form.classList.add('shake');
         pEl.select();
         pEl.focus();
       }
     });
 
-    // Quality of life shortcuts
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
         uEl.value = '';
