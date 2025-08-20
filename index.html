@@ -2,142 +2,165 @@
 <html lang="cs">
 <head>
   <meta charset="UTF-8">
-  <title>Secure Access</title>
+  <title>Secure Terminal</title>
   <style>
     body {
-      background-color: #0d0d0d;
-      color: #00ff99;
+      background: #000;
+      color: #00ff00;
       font-family: "Courier New", monospace;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      margin: 0;
-      overflow: hidden;
     }
 
-    #loading, #login, #redirect {
-      display: none;
-      text-align: left;
-      max-width: 600px;
-      width: 90%;
+    #terminal {
+      background: rgba(0, 0, 0, 0.85);
+      padding: 30px;
+      border: 2px solid #00ff00;
+      width: 600px;
+      max-width: 90%;
+      box-shadow: 0 0 25px #00ff00;
+      border-radius: 10px;
     }
 
-    .line {
-      opacity: 0;
-      animation: fadeIn 0.6s forwards;
+    h1 {
+      font-size: 22px;
+      margin-bottom: 20px;
+      text-align: center;
+      text-transform: uppercase;
+      text-shadow: 0 0 8px #00ff00;
+      letter-spacing: 2px;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    label {
+      display: block;
+      margin: 10px 0 5px;
     }
 
     input {
-      background: black;
-      border: none;
-      border-bottom: 1px solid #00ff99;
-      color: #00ff99;
-      padding: 8px;
       width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      background: black;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      font-family: inherit;
       font-size: 16px;
+      border-radius: 4px;
       outline: none;
     }
 
+    input:focus {
+      box-shadow: 0 0 8px #00ff00;
+    }
+
     button {
-      margin-top: 12px;
+      width: 100%;
+      padding: 10px;
       background: black;
-      color: #00ff99;
-      border: 1px solid #00ff99;
-      padding: 6px 14px;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      font-size: 16px;
       cursor: pointer;
-      font-family: "Courier New", monospace;
-      transition: background 0.2s;
+      border-radius: 4px;
+      text-transform: uppercase;
     }
 
     button:hover {
-      background: #003322;
+      background: #00ff00;
+      color: black;
+      font-weight: bold;
     }
 
-    .blink {
+    #message {
+      margin-top: 15px;
+      min-height: 20px;
+      font-size: 16px;
+      white-space: pre-line;
+    }
+
+    /* Efekt blikání kurzoru */
+    .cursor::after {
+      content: "_";
       animation: blink 1s infinite;
     }
 
     @keyframes blink {
-      0% { opacity: 1; }
-      50% { opacity: 0; }
-      100% { opacity: 1; }
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    /* Efekt fade-in pro text */
+    .fade-in {
+      opacity: 0;
+      animation: fadeIn 1.2s forwards;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
     }
   </style>
 </head>
 <body>
+  <div id="terminal">
+    <h1>SECURE ACCESS TERMINAL</h1>
+    <form id="loginForm">
+      <label for="username">UŽIVATEL:</label>
+      <input type="text" id="username" autocomplete="off" required>
 
-  <div id="loading"></div>
+      <label for="password">OVĚŘENÍ:</label>
+      <input type="password" id="password" required>
 
-  <div id="login">
-    <p>UZIVATEL: <span style="color:white;">The.Unknown.Step</span></p>
-    <p>OVERENI:</p>
-    <input type="password" id="password" placeholder="Zadej přístupový klíč">
-    <br>
-    <button onclick="checkPassword()">Potvrdit</button>
-    <p id="error" style="color: red; display: none;">Nesprávný klíč, přístup odepřen.</p>
-  </div>
-
-  <div id="redirect">
-    <p>Access granted... <span class="blink">Redirecting</span></p>
+      <button type="submit">Přihlásit</button>
+    </form>
+    <div id="message"></div>
   </div>
 
   <script>
-    const correctPassword = "9sctci10xu";
-    const loadingLines = [
-      "Initializing secure channel...",
-      "Loading encryption keys...",
-      "Bypassing proxy layers...",
-      "Establishing connection...",
-      "Verifying digital identity..."
-    ];
+    const form = document.getElementById("loginForm");
+    const msg = document.getElementById("message");
 
-    // postupné vypisování hlášek
-    function showLoading() {
-      const loadingDiv = document.getElementById("loading");
-      let delay = 0;
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const user = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value.trim();
 
-      loadingLines.forEach((line, index) => {
-        const p = document.createElement("p");
-        p.classList.add("line");
-        p.style.animationDelay = (index * 1.2) + "s";
-        p.textContent = line;
-        loadingDiv.appendChild(p);
-        delay = (index + 1) * 1200;
-      });
+      msg.textContent = "";
+      msg.classList.remove("fade-in");
 
-      // po dokončení zobraz login
-      setTimeout(() => {
-        loadingDiv.style.display = "none";
-        document.getElementById("login").style.display = "block";
-      }, delay + 1000);
-    }
+      if (user === "The.Unknown.Step" && pass === "9sctci10xu") {
+        // simulace terminálu
+        let steps = [
+          "Ověřuji přihlašovací údaje",
+          "Kontroluji bezpečnostní token",
+          "Přístup povolen...",
+          `Vítej zpět, ${user}`
+        ];
 
-    function checkPassword() {
-      const password = document.getElementById("password").value;
-      if (password === correctPassword) {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("redirect").style.display = "block";
+        let i = 0;
+        function typeStep() {
+          if (i < steps.length) {
+            msg.innerHTML += steps[i] + "<br>";
+            msg.scrollTop = msg.scrollHeight;
+            i++;
+            setTimeout(typeStep, 1200);
+          } else {
+            msg.innerHTML += "<br><span class='cursor'>Načítám další modul...</span>";
+            setTimeout(() => {
+              window.location.href = "dalsi-hadanka.html";
+            }, 4000);
+          }
+        }
+        typeStep();
 
-        setTimeout(() => {
-          window.location.href = "https://www.google.com"; // změň na cílový odkaz
-        }, 2500);
       } else {
-        document.getElementById("error").style.display = "block";
+        msg.textContent = "Přístup odepřen. Neplatné údaje.";
+        msg.style.color = "red";
       }
-    }
-
-    // spusť loading hned po načtení
-    window.onload = () => {
-      document.getElementById("loading").style.display = "block";
-      showLoading();
-    };
+    });
   </script>
-
 </body>
 </html>
