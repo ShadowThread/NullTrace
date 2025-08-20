@@ -1,143 +1,262 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8">
-  <title>Secure Access</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>access.node // secure gateway</title>
   <style>
-    body {
-      background-color: #0d0d0d;
-      color: #00ff99;
-      font-family: "Courier New", monospace;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+    :root {
+      --bg: #050807;
+      --fg: #d2ffd2;
+      --muted: #7bbf7b;
+      --accent: #92ff92;
+      --error: #ff4d4d;
+    }
+    html, body {
+      height: 100%;
       margin: 0;
+      background: #000;
+      color: var(--fg);
+      font: 16px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(255,255,255,0.02),
+        rgba(255,255,255,0.02) 1px,
+        transparent 2px,
+        transparent 4px
+      );
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.25);
+      box-shadow: inset 0 0 150px rgba(0,0,0,0.7);
+      pointer-events: none;
+    }
+
+    .crt {
+      filter: contrast(1.05) brightness(1.1) saturate(1.2);
+      text-shadow: 0 0 3px rgba(146,255,146,0.7), 0 0 12px rgba(100,255,100,0.3);
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 16px;
+    }
+
+    .terminal {
+      border: 1px solid #103010;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(10,20,10,0.9), rgba(2,4,2,0.95));
+      box-shadow: 0 15px 40px rgba(0,0,0,0.8), inset 0 0 40px rgba(10,60,10,0.4);
       overflow: hidden;
     }
 
-    #loading, #login, #redirect {
-      display: none;
-      text-align: left;
-      max-width: 600px;
-      width: 90%;
+    .terminal__header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #081008;
+      border-bottom: 1px solid #103010;
+      color: var(--muted);
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
     }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot--red { background: #ff5f56; }
+    .dot--yellow { background: #ffbd2e; }
+    .dot--green { background: #27c93f; }
 
-    .line {
-      opacity: 0;
-      animation: fadeIn 0.6s forwards;
+    .terminal__body { padding: 18px; min-height: 65vh; }
+    .log { white-space: pre-wrap; line-height: 1.45; }
+    .muted { color: var(--muted); }
+    .accent { color: var(--accent); }
+    .error { color: var(--error); }
+
+    .cursor {
+      display: inline-block;
+      width: 8px; height: 1.2em;
+      background: var(--accent);
+      margin-left: 2px;
+      animation: blink 1s steps(1) infinite;
+      vertical-align: text-bottom;
     }
+    @keyframes blink { 50% { opacity: 0; } }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    form.auth {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px 12px;
+      margin-top: 14px;
+      max-width: 520px;
     }
-
-    input {
-      background: black;
-      border: none;
-      border-bottom: 1px solid #00ff99;
-      color: #00ff99;
-      padding: 8px;
-      width: 100%;
-      font-size: 16px;
-      outline: none;
+    .label { color: var(--muted); }
+    .input {
+      background: #050b05;
+      color: var(--fg);
+      border: 1px solid #1e3a1e;
+      border-radius: 8px;
+      padding: 9px 11px;
     }
+    .input:focus { border-color: var(--accent); box-shadow: 0 0 8px rgba(146,255,146,0.3); outline: none; }
 
-    button {
-      margin-top: 12px;
-      background: black;
-      color: #00ff99;
-      border: 1px solid #00ff99;
-      padding: 6px 14px;
+    .btn {
+      grid-column: 1 / -1;
+      margin-top: 4px;
+      justify-self: start;
+      background: #0b2a0f;
+      color: var(--fg);
+      border: 1px solid #1f5a2a;
+      border-radius: 8px;
+      padding: 9px 14px;
       cursor: pointer;
-      font-family: "Courier New", monospace;
-      transition: background 0.2s;
+      transition: all .2s ease;
+    }
+    .btn:hover { border-color: var(--accent); background: #123d16; }
+
+    .shake { animation: shake 300ms ease-in-out; }
+    @keyframes shake {
+      10%, 90% { transform: translateX(-1px); }
+      20%, 80% { transform: translateX(2px); }
+      30%, 50%, 70% { transform: translateX(-4px); }
+      40%, 60% { transform: translateX(4px); }
     }
 
-    button:hover {
-      background: #003322;
-    }
+    .footer { opacity: .6; font-size: 12px; margin-top: 10px; color: var(--muted); }
 
-    .blink {
-      animation: blink 1s infinite;
-    }
-
-    @keyframes blink {
-      0% { opacity: 1; }
-      50% { opacity: 0; }
-      100% { opacity: 1; }
+    @media (max-width: 520px) {
+      .terminal__body { padding: 12px; font-size: 15px; }
     }
   </style>
 </head>
-<body>
-
-  <div id="loading"></div>
-
-  <div id="login">
-    <p>UZIVATEL: <span style="color:white;">The.Unknown.Step</span></p>
-    <p>OVERENI:</p>
-    <input type="password" id="password" placeholder="Zadej přístupový klíč">
-    <br>
-    <button onclick="checkPassword()">Potvrdit</button>
-    <p id="error" style="color: red; display: none;">Nesprávný klíč, přístup odepřen.</p>
-  </div>
-
-  <div id="redirect">
-    <p>Access granted... <span class="blink">Redirecting</span></p>
+<body class="crt">
+  <div class="container">
+    <div class="terminal">
+      <div class="terminal__header">
+        <span class="dot dot--red"></span>
+        <span class="dot dot--yellow"></span>
+        <span class="dot dot--green"></span>
+        <span>access.node / secure gateway</span>
+      </div>
+      <div class="terminal__body" id="term">
+        <div id="boot" class="log"></div>
+        <div id="authWrap" style="display:none">
+          <div class="log"><span class="muted">auth@node</span>:<span class="accent">~</span>$ login</div>
+          <form class="auth" id="auth" autocomplete="off">
+            <label for="u" class="label">uživatel</label>
+            <input id="u" name="u" class="input" spellcheck="false" autocapitalize="none" required />
+            <label for="p" class="label">heslo</label>
+            <input id="p" name="p" class="input" type="password" required />
+            <button class="btn" type="submit">ověřit</button>
+          </form>
+          <div id="authLog" class="log"></div>
+          <div class="footer">Tip: <span class="accent">Ctrl/⌘+L</span> vymaže vstupní pole.</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const correctPassword = "9sctci10xu";
-    const loadingLines = [
-      "Initializing secure channel...",
-      "Loading encryption keys...",
-      "Bypassing proxy layers...",
-      "Establishing connection...",
-      "Verifying digital identity..."
+    const NEXT_URL = "next.html";
+    const VALID_HASH = "a2c9ab2ea278850daef237f8d2849c4a12fbfbcfb198fa12008d88ba50af29ed";
+
+    const bootLines = [
+      "[BOOT] Initializing secure node...",
+      "[OK] Kernel integrity: verified",
+      "[OK] Network interface: online",
+      "[INFO] Handshake with control cluster: established",
+      "[OK] Cipher suites: AES-256-GCM / CHACHA20-POLY1305",
+      "[OK] HMAC: SHA-256",
+      "[INFO] Audit trail: clean",
+      "[READY] Authentication module loaded",
+      "\nWelcome, operative. Prokažte svou identitu."
     ];
 
-    // postupné vypisování hlášek
-    function showLoading() {
-      const loadingDiv = document.getElementById("loading");
-      let delay = 0;
+    const bootEl = document.getElementById('boot');
+    const authWrap = document.getElementById('authWrap');
+    const form = document.getElementById('auth');
+    const logEl = document.getElementById('authLog');
+    const uEl = document.getElementById('u');
+    const pEl = document.getElementById('p');
 
-      loadingLines.forEach((line, index) => {
-        const p = document.createElement("p");
-        p.classList.add("line");
-        p.style.animationDelay = (index * 1.2) + "s";
-        p.textContent = line;
-        loadingDiv.appendChild(p);
-        delay = (index + 1) * 1200;
-      });
-
-      // po dokončení zobraz login
-      setTimeout(() => {
-        loadingDiv.style.display = "none";
-        document.getElementById("login").style.display = "block";
-      }, delay + 1000);
-    }
-
-    function checkPassword() {
-      const password = document.getElementById("password").value;
-      if (password === correctPassword) {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("redirect").style.display = "block";
-
-        setTimeout(() => {
-          window.location.href = "https://www.google.com"; // změň na cílový odkaz
-        }, 2500);
-      } else {
-        document.getElementById("error").style.display = "block";
+    async function typeLine(text, el, speedMin = 15, speedMax = 35) {
+      for (let i = 0; i < text.length; i++) {
+        el.textContent += text[i];
+        await new Promise(r => setTimeout(r, Math.random() * (speedMax - speedMin) + speedMin));
       }
+      el.textContent += "\n";
     }
 
-    // spusť loading hned po načtení
-    window.onload = () => {
-      document.getElementById("loading").style.display = "block";
-      showLoading();
-    };
-  </script>
+    (async function boot() {
+      for (const line of bootLines) {
+        await typeLine(line, bootEl);
+      }
+      authWrap.style.display = '';
+      uEl.focus();
+    })();
 
+    async function sha256Hex(str) {
+      const data = new TextEncoder().encode(str);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      logEl.textContent = '';
+      const u = (uEl.value || '').trim();
+      const p = pEl.value || '';
+      const h = await sha256Hex(`${u}:${p}`);
+
+      if (h === VALID_HASH) {
+        appendLine(`[AUTH] user '${u}' accepted`);
+        appendLine(`[ACCESS] granted`);
+        setTimeout(() => window.location.assign(NEXT_URL), 1000);
+      } else {
+        termError(`[AUTH] invalid credentials for '${u || 'anonymous'}'`);
+        form.classList.remove('shake');
+        void form.offsetWidth;
+        form.classList.add('shake');
+        pEl.select();
+        pEl.focus();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
+        uEl.value = '';
+        pEl.value = '';
+        logEl.textContent = '';
+        e.preventDefault();
+      }
+    });
+
+    function appendLine(text) {
+      const line = document.createElement('div');
+      line.textContent = text;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    function termError(text) {
+      const line = document.createElement('div');
+      line.innerHTML = `<span class="error">${escapeHtml(text)}</span>`;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    function escapeHtml(str) {
+      return str.replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
+    }
+  </script>
 </body>
 </html>
