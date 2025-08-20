@@ -1,117 +1,115 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8">
-  <title>Secure Terminal</title>
-  <style>
-    body {
-      background: #000;
-      color: #00ff00;
-      font-family: "Courier New", monospace;
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+<meta charset="UTF-8">
+<title>Bezpečný terminál</title>
+<style>
+  body {
+    background: #000;
+    color: #00ff66;
+    font-family: "Courier New", monospace;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 
-    #terminal {
-      background: rgba(0, 0, 0, 0.85);
-      padding: 30px;
-      border: 2px solid #00ff00;
-      width: 600px;
-      max-width: 90%;
-      box-shadow: 0 0 25px #00ff00;
-      border-radius: 10px;
-    }
+  #terminal {
+    background: rgba(0, 0, 0, 0.85);
+    padding: 30px;
+    border: 2px solid #00ff66;
+    width: 600px;
+    max-width: 90%;
+    box-shadow: 0 0 25px #00ff66;
+    border-radius: 10px;
+  }
 
-    h1 {
-      font-size: 22px;
-      margin-bottom: 20px;
-      text-align: center;
-      text-transform: uppercase;
-      text-shadow: 0 0 8px #00ff00;
-      letter-spacing: 2px;
-    }
+  h1 {
+    font-size: 22px;
+    margin-bottom: 20px;
+    text-align: center;
+    text-transform: uppercase;
+    text-shadow: 0 0 8px #00ff66;
+    letter-spacing: 2px;
+  }
 
-    label {
-      display: block;
-      margin: 10px 0 5px;
-    }
+  label {
+    display: block;
+    margin: 10px 0 5px;
+  }
 
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      background: black;
-      border: 1px solid #00ff00;
-      color: #00ff00;
-      font-family: inherit;
-      font-size: 16px;
-      border-radius: 4px;
-      outline: none;
-    }
+  input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    background: black;
+    border: 1px solid #00ff66;
+    color: #00ff66;
+    font-family: inherit;
+    font-size: 16px;
+    border-radius: 4px;
+    outline: none;
+  }
 
-    input:focus {
-      box-shadow: 0 0 8px #00ff00;
-    }
+  input:focus {
+    box-shadow: 0 0 8px #00ff66;
+  }
 
-    button {
-      width: 100%;
-      padding: 10px;
-      background: black;
-      border: 1px solid #00ff00;
-      color: #00ff00;
-      font-size: 16px;
-      cursor: pointer;
-      border-radius: 4px;
-      text-transform: uppercase;
-    }
+  button {
+    width: 100%;
+    padding: 10px;
+    background: black;
+    border: 1px solid #00ff66;
+    color: #00ff66;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
 
-    button:hover {
-      background: #00ff00;
-      color: black;
-      font-weight: bold;
-    }
+  button:hover {
+    background: #00ff66;
+    color: black;
+    font-weight: bold;
+  }
 
-    #message {
-      margin-top: 15px;
-      min-height: 20px;
-      font-size: 16px;
-      white-space: pre-line;
-    }
+  #message {
+    margin-top: 15px;
+    min-height: 24px;
+    font-size: 16px;
+    white-space: pre-line;
+  }
 
-    /* Efekt blikání kurzoru */
-    .cursor::after {
-      content: "_";
-      animation: blink 1s infinite;
-    }
+  .cursor::after {
+    content: "_";
+    animation: blink 1s infinite;
+  }
 
-    @keyframes blink {
-      0%, 50% { opacity: 1; }
-      51%, 100% { opacity: 0; }
-    }
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
 
-    /* Efekt fade-in pro text */
-    .fade-in {
-      opacity: 0;
-      animation: fadeIn 1.2s forwards;
-    }
+  .fade-in {
+    opacity: 0;
+    animation: fadeIn 1s forwards;
+  }
 
-    @keyframes fadeIn {
-      to { opacity: 1; }
-    }
-  </style>
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+</style>
 </head>
 <body>
   <div id="terminal">
-    <h1>SECURE ACCESS TERMINAL</h1>
+    <h1>Bezpečný přístup</h1>
     <form id="loginForm">
-      <label for="username">UŽIVATEL:</label>
+      <label for="username">Uživatel:</label>
       <input type="text" id="username" autocomplete="off" required>
 
-      <label for="password">OVĚŘENÍ:</label>
+      <label for="password">Heslo:</label>
       <input type="password" id="password" required>
 
       <button type="submit">Přihlásit</button>
@@ -122,42 +120,57 @@
   <script>
     const form = document.getElementById("loginForm");
     const msg = document.getElementById("message");
+    const correctUser = "The.Unknown.Step";
+    const correctPass = "9sctci10xu";
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const user = document.getElementById("username").value.trim();
       const pass = document.getElementById("password").value.trim();
-
       msg.textContent = "";
-      msg.classList.remove("fade-in");
+      msg.style.color = "#00ff66";
 
-      if (user === "The.Unknown.Step" && pass === "9sctci10xu") {
-        // simulace terminálu
-        let steps = [
-          "Ověřuji přihlašovací údaje",
-          "Kontroluji bezpečnostní token",
-          "Přístup povolen...",
-          `Vítej zpět, ${user}`
+      if(user === correctUser && pass === correctPass) {
+        form.style.display = "none";
+
+        const steps = [
+          "Ověřuji přihlašovací údaje...",
+          "Kontroluji bezpečnostní token...",
+          "Inicializuji zabezpečený přístup...",
+          `Přístup povolen. Vítej, ${user}!`
         ];
 
         let i = 0;
-        function typeStep() {
-          if (i < steps.length) {
-            msg.innerHTML += steps[i] + "<br>";
-            msg.scrollTop = msg.scrollHeight;
+        const stepDelay = 1000; // 1 sekunda mezi kroky
+        const cursor = document.createElement("span");
+        cursor.className = "cursor";
+        msg.appendChild(cursor);
+
+        function showStep() {
+          if(i < steps.length) {
+            cursor.insertAdjacentText("beforebegin", steps[i] + "\n");
             i++;
-            setTimeout(typeStep, 1200);
+            setTimeout(showStep, stepDelay);
           } else {
-            msg.innerHTML += "<br><span class='cursor'>Načítám další modul...</span>";
+            // finální animace před přesměrováním
+            cursor.textContent = "_ Načítám další modul...";
+            let dots = 0;
+            const dotInterval = setInterval(() => {
+              dots = (dots + 1) % 4;
+              cursor.textContent = "_ Načítám další modul" + ".".repeat(dots);
+            }, 500);
+
+            // přesměrování po cca 4 sekundách
             setTimeout(() => {
-              window.location.href = "dalsi-hadanka.html";
+              clearInterval(dotInterval);
+              window.location.href = "dalsi-hadanka.html"; // změň podle cíle
             }, 4000);
           }
         }
-        typeStep();
+        setTimeout(showStep, 500);
 
       } else {
-        msg.textContent = "Přístup odepřen. Neplatné údaje.";
+        msg.textContent = "Přístup odepřen. Nesprávné údaje.";
         msg.style.color = "red";
       }
     });
