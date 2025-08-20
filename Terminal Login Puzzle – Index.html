@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>access.node // secure gateway</title>
+  <style>
+    :root {
+      --bg: #0b0f10;
+      --fg: #d2ffd2;
+      --muted: #88c088;
+      --accent: #7aff7a;
+      --error: #ff6b6b;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: radial-gradient(1200px 800px at 20% 10%, #0f1618 0%, var(--bg) 60%);
+      color: var(--fg);
+      font: 16px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    .scanline:before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(255,255,255,0.03),
+        rgba(255,255,255,0.03) 1px,
+        transparent 2px,
+        transparent 4px
+      );
+      pointer-events: none;
+      mix-blend-mode: overlay;
+    }
+    .crt { filter: saturate(1.1) contrast(1.05); }
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 32px 16px 48px;
+    }
+    .terminal {
+      border: 1px solid #143a14;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(10,14,10,0.8), rgba(5,8,5,0.9));
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 0 1px #071007;
+      overflow: hidden;
+    }
+    .terminal__header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: #0e1610;
+      border-bottom: 1px solid #143a14;
+      color: var(--muted);
+      user-select: none;
+      letter-spacing: 0.02em;
+      font-size: 14px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot--red { background: #ff5f56; }
+    .dot--yellow { background: #ffbd2e; }
+    .dot--green { background: #27c93f; }
+
+    .terminal__body { padding: 16px; min-height: 60vh; }
+    .log { white-space: pre-wrap; }
+    .muted { color: var(--muted); }
+    .accent { color: var(--accent); }
+    .error { color: var(--error); }
+
+    .cursor {
+      display: inline-block;
+      width: 8px; height: 1.2em;
+      background: var(--accent);
+      margin-left: 2px;
+      animation: blink 1s steps(1) infinite;
+      vertical-align: text-bottom;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    form.auth {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px 12px;
+      align-items: center;
+      margin-top: 12px;
+      max-width: 520px;
+    }
+    .label { color: var(--muted); }
+    .input {
+      background: #0a120a;
+      color: var(--fg);
+      border: 1px solid #1e3a1e;
+      border-radius: 10px;
+      padding: 10px 12px;
+      outline: none;
+    }
+    .input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(122,255,122,0.15); }
+
+    .btn {
+      grid-column: 1 / -1;
+      justify-self: start;
+      background: #0f2a12;
+      color: var(--fg);
+      border: 1px solid #1f5a2a;
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    .btn:hover { border-color: var(--accent); }
+
+    .shake { animation: shake 300ms ease-in-out; }
+    @keyframes shake {
+      10%, 90% { transform: translateX(-1px); }
+      20%, 80% { transform: translateX(2px); }
+      30%, 50%, 70% { transform: translateX(-4px); }
+      40%, 60% { transform: translateX(4px); }
+    }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+    .footer { opacity: .7; font-size: 12px; margin-top: 10px; }
+
+    /* Responsivita */
+    @media (max-width: 520px) {
+      .terminal__body { padding: 12px; }
+    }
+  </style>
+</head>
+<body class="scanline crt">
+  <div class="container">
+    <div class="terminal" role="group" aria-label="Secure terminal window">
+      <div class="terminal__header">
+        <span class="dot dot--red" aria-hidden="true"></span>
+        <span class="dot dot--yellow" aria-hidden="true"></span>
+        <span class="dot dot--green" aria-hidden="true"></span>
+        <span>access.node / secure gateway</span>
+      </div>
+      <div class="terminal__body" id="term">
+        <div id="boot" class="log" aria-live="polite" aria-atomic="false"></div>
+        <div id="authWrap" style="display:none">
+          <div class="log">
+            <span class="muted">auth@node</span>:<span class="accent">~</span>$ login
+          </div>
+          <form class="auth" id="auth" autocomplete="off">
+            <label for="u" class="label">uživatel</label>
+            <input id="u" name="u" class="input" inputmode="text" spellcheck="false" autocapitalize="none" required aria-describedby="u-hint" />
+            <div id="u-hint" class="sr-only">Zadejte uživatelské jméno</div>
+
+            <label for="p" class="label">heslo</label>
+            <input id="p" name="p" class="input" type="password" required aria-describedby="p-hint" />
+            <div id="p-hint" class="sr-only">Zadejte heslo</div>
+
+            <button class="btn" type="submit">ověřit</button>
+          </form>
+          <div id="authLog" class="log" aria-live="polite"></div>
+          <div class="footer muted">Tip: <span class="accent">Ctrl/⌘+L</span> vymaže vstupní pole.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // KONFIGURACE
+    // =========================
+    // Cíl pro přesměrování po úspěšném loginu — upravte na finální URL/stránku další hádanky.
+    const NEXT_URL = "next.html"; // např. "https://your-domain.xyz/phase-2"
+
+    // SHA-256 hash pro řetězec "uživatel:heslo" (bez uvozovek).
+    // Hash vytvořen pro: "The.Unknown.Step:9sctci10xu"
+    const VALID_HASH = "a2c9ab2ea278850daef237f8d2849c4a12fbfbcfb198fa12008d88ba50af29ed";
+
+    // =========================
+    // BOOT SEKQUENCE (efekt psaní)
+    // =========================
+    const bootLines = [
+      "[BOOT] Initializing secure node...",
+      "[OK] Kernel integrity: verified",
+      "[OK] Network interface: online",
+      "[INFO] Handshake with control cluster: established",
+      "[OK] Cipher suites: AES-256-GCM / CHACHA20-POLY1305",
+      "[OK] HMAC: SHA-256",
+      "[INFO] Audit trail: clean",
+      "[READY] Authentication module loaded",
+      "\nWelcome, operative. Prokažte svou identitu."
+    ];
+
+    const bootEl = document.getElementById('boot');
+    const authWrap = document.getElementById('authWrap');
+    const form = document.getElementById('auth');
+    const logEl = document.getElementById('authLog');
+    const uEl = document.getElementById('u');
+    const pEl = document.getElementById('p');
+
+    // Typing effect
+    async function typeLine(text, el, speedMin = 10, speedMax = 28) {
+      for (let i = 0; i < text.length; i++) {
+        el.textContent += text[i];
+        await new Promise(r => setTimeout(r, Math.random() * (speedMax - speedMin) + speedMin));
+      }
+      el.textContent += "\n";
+    }
+
+    (async function boot() {
+      for (const line of bootLines) {
+        await typeLine(line, bootEl);
+      }
+      // Reveal auth
+      authWrap.style.display = '';
+      // Focus username
+      uEl.focus();
+    })();
+
+    // Utility: SHA-256 to hex
+    async function sha256Hex(str) {
+      const enc = new TextEncoder();
+      const data = enc.encode(str);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      const bytes = new Uint8Array(hash);
+      let hex = '';
+      for (const b of bytes) hex += b.toString(16).padStart(2, '0');
+      return hex;
+    }
+
+    // Form submit handler
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const u = (uEl.value || '').trim();
+      const p = pEl.value || '';
+
+      // Short UX nicety: clear log
+      logEl.textContent = '';
+
+      // Compute hash and compare
+      const h = await sha256Hex(`${u}:${p}`);
+
+      if (h === VALID_HASH) {
+        appendLine(`[AUTH] user '${u}' accepted`);
+        appendLine(`[ACCESS] granted`);
+        setTimeout(() => {
+          window.location.assign(NEXT_URL);
+        }, 700);
+      } else {
+        termError(`[AUTH] invalid credentials for '${u || 'anonymous'}'`);
+        // visual feedback
+        form.classList.remove('shake');
+        void form.offsetWidth; // restart animation
+        form.classList.add('shake');
+        pEl.select();
+        pEl.focus();
+      }
+    });
+
+    // Quality of life shortcuts
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
+        uEl.value = '';
+        pEl.value = '';
+        logEl.textContent = '';
+        e.preventDefault();
+      }
+    });
+
+    function appendLine(text) {
+      const line = document.createElement('div');
+      line.textContent = text;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    function termError(text) {
+      const line = document.createElement('div');
+      line.innerHTML = `<span class="error">${escapeHtml(text)}</span>`;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    function escapeHtml(str) {
+      return str.replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
+    }
+  </script>
+</body>
+</html>
