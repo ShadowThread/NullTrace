@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="Bezpečný přístup do uzlu. Ověřte identitu." />
+  <title>Bezpečný přístup – access.node</title>
+  <style>
+    :root {
+      --bg: #050706;
+      --fg: #d6ffd6;
+      --muted: #9be09b;
+      --accent: #8dff8d;
+      --error: #ff5a5a;
+      --warn: #ffd166;
+      --ok: #6bff94;
+      --ring: rgba(141,255,141,.2);
+      --glass: rgba(8,14,10,.7);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: radial-gradient(1200px 800px at 15% 10%, #0d1511 0%, var(--bg) 60%);
+      color: var(--fg);
+      font: 16px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .scanlines::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none;
+      background: repeating-linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.03) 1px, transparent 2px, transparent 4px);
+      mix-blend-mode: overlay; opacity: .6;
+    }
+    .vignette::after {
+      content: ""; position: fixed; inset: 0; pointer-events: none;
+      box-shadow: inset 0 0 160px rgba(0,0,0,.85);
+    }
+    .container { max-width: 1040px; margin: 0 auto; padding: 32px 16px 48px; }
+    .term {
+      border: 1px solid #153d1e;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(8,14,10,.85), rgba(5,9,7,.95));
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      box-shadow: 0 24px 60px rgba(0,0,0,.7), inset 0 0 0 1px #071108;
+      overflow: hidden;
+    }
+    .term__topbar {
+      display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #153d1e; background:#0a120d;
+      color: var(--muted); letter-spacing: .05em; text-transform: uppercase; font-size: 13px;
+    }
+    .win-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .red   { background:#ff5f56; }
+    .yellow{ background:#ffbd2e; }
+    .green { background:#27c93f; }
+    .term__body { position: relative; min-height: 68vh; padding: 18px; }
+    .log { white-space: pre-wrap; line-height: 1.42; word-break: break-word; }
+    .muted { color: var(--muted); }
+    .accent { color: var(--accent); }
+    .ok { color: var(--ok); }
+    .err { color: var(--error); }
+    .warn { color: var(--warn); }
+    .cursor { display:inline-block; width: 8px; height: 1.15em; margin-left: 2px; background: var(--accent); vertical-align: text-bottom; animation: blink 1s steps(1,end) infinite; }
+    @keyframes blink { 50% { opacity: 0 } }
+    #boot, #authSection, #redirectSection { display: none; }
+    .auth { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; max-width: 560px; margin-top: 10px; }
+    .label { color: var(--muted); }
+    .input {
+      background: #070d09; color: var(--fg);
+      border: 1px solid #254f2e; border-radius: 12px; padding: 11px 12px; outline: none;
+      transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+    .btn { grid-column: 1 / -1; justify-self: start; background: #0e2d14; color: var(--fg); border: 1px solid #2a6a3a; border-radius: 12px; padding: 11px 16px; cursor: pointer; transition: all .18s ease; }
+    .btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .shake { animation: shake .32s ease-in-out; }
+    @keyframes shake { 12%, 88% { transform: translateX(-1px) } 24%, 76% { transform: translateX(2px) } 36%, 60% { transform: translateX(-4px) } 48% { transform: translateX(4px) } }
+    .foot { opacity: .65; font-size: 12px; margin-top: 8px; color: var(--muted); }
+    .redirect { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(5,10,8,.9); animation: fadeIn .45s ease forwards; opacity: 0; }
+    @keyframes fadeIn { to { opacity: 1 } }
+    .redirect__panel {
+      width: min(680px, 92%); border: 1px solid #1d4b28; border-radius: 16px; padding: 18px 16px;
+      background: linear-gradient(180deg, rgba(10,18,14,.9), rgba(6,10,8,.95));
+      box-shadow: 0 14px 40px rgba(0,0,0,.6), inset 0 0 0 1px #0a130d;
+    }
+    .meter { height: 10px; border-radius: 999px; background: #0b140f; border: 1px solid #183f23; overflow: hidden; margin-top: 12px; }
+    .meter__fill { height: 100%; width: 0%; background: linear-gradient(90deg, #46d46a, #a1ffb1); box-shadow: 0 0 14px rgba(109,255,140,.35); transition: width .12s ease; }
+    .kbd { padding: 1px 5px; border: 1px solid #355e3d; border-radius: 6px; background: #0b1a11; color: var(--muted); }
+    @media (max-width: 560px) {
+      .term__body { padding: 14px; }
+      .auth { grid-template-columns: 1fr; }
+      .btn { justify-self: stretch; }
+    }
+  </style>
+</head>
+<body class="scanlines vignette">
+  <noscript>
+    <div style="max-width:760px;margin:24px auto;padding:16px;border:1px solid #a00;color:#fff;background:#200">
+      Tento web vyžaduje JavaScript. Povolte jej prosím, jinak nelze ověřit přístup.
+    </div>
+  </noscript>
+  <div class="container">
+    <div class="term" role="group" aria-label="Okno terminálu">
+      <div class="term__topbar">
+        <span class="win-dot red" aria-hidden="true"></span>
+        <span class="win-dot yellow" aria-hidden="true"></span>
+        <span class="win-dot green" aria-hidden="true"></span>
+        <span style="opacity:.8">access.node / secure gateway</span>
+      </div>
+      <div class="term__body" id="term">
+        <section id="boot" class="log" aria-live="polite"></section>
+        <section id="authSection" aria-live="polite">
+          <div class="log"><span class="muted">auth@node</span>:<span class="accent">~</span>$ login</div>
+          <form id="authForm" class="auth" autocomplete="off">
+            <label for="u" class="label">Uživatel</label>
+            <input id="u" name="u" class="input" inputmode="text" spellcheck="false" autocapitalize="none" required />
+            <label for="p" class="label">Heslo</label>
+            <input id="p" name="p" class="input" type="password" required />
+            <button class="btn" type="submit">Ověřit</button>
+          </form>
+          <div id="authLog" class="log" aria-live="polite"></div>
+          <div class="foot">Tip: <span class="kbd">Ctrl/⌘ + L</span> vymaže pole formuláře.</div>
+        </section>
+        <section id="redirectSection" class="redirect" aria-hidden="true">
+          <div class="redirect__panel">
+            <div class="log" id="redirectLog"></div>
+            <div class="meter"><div class="meter__fill" id="meterFill"></div></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <script>
+    const NEXT_URL = "dalsi-hadanka.html";
+    const VALID_HASH = "a2c9ab2ea278850daef237f8d2849c4a12fbfbcfb198fa12008d88ba50af29ed";
+    const BOOT_MIN_DELAY = 12, BOOT_MAX_DELAY = 28;
+    const bootEl = document.getElementById('boot');
+    const authSection = document.getElementById('authSection');
+    const authForm = document.getElementById('authForm');
+    const uEl = document.getElementById('u');
+    const pEl = document.getElementById('p');
+    const authLog = document.getElementById('authLog');
+    const redirectSection = document.getElementById('redirectSection');
+    const redirectLog = document.getElementById('redirectLog');
+    const meterFill = document.getElementById('meterFill');
+    function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
+    async function typeLine(text, el, min = BOOT_MIN_DELAY, max = BOOT_MAX_DELAY) {
+      for (let i = 0; i < text.length; i++) {
+        el.textContent += text[i];
+        const t = Math.random() * (max - min) + min;
+        const extra = ",.:".includes(text[i]) ? Math.random() * 40 : 0;
+        await wait(t + extra);
+      }
+      el.textContent += "\n";
+      el.scrollTop = el.scrollHeight;
+    }
+    function print(el, text){ const div = document.createElement('div'); div.textContent = text; el.appendChild(div); el.scrollTop = el.scrollHeight; return div; }
+    function printHTML(el, html){ const div = document.createElement('div'); div.innerHTML = html; el.appendChild(div); el.scrollTop = el.scrollHeight; return div; }
+    async function sha256Hex(str){
+      if (!window.crypto || !window.crypto.subtle) { alert("Tento prohlížeč nepodporuje crypto.subtle"); return ""; }
+      const data = new TextEncoder().encode(str);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    function escapeHtml(str){ return str.replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c])); }
+    const bootLines = [
+      "[BOOT] Spouštím zabezpečený uzel...",
+      "[OK] Integrita jádra: ověřena",
+      "[OK] Síťové rozhraní: online",
+      "[INFO] Navazuji šifrovaný handshake s řídicím clusterem",
+      "[OK] Sady šifer: AES-256-GCM / CHACHA20-POLY1305",
+      "[OK] HMAC: SHA-256",
+      "[INFO] Auditní stopa: čistá",
+      "[READY] Modul ověřování: připraven",
+      "",
+      "Vítejte, operátoři. Prokažte svou identitu."
+    ];
+    async function runBoot(){
+      bootEl.style.display = '';
+      for (const line of bootLines){
+        await typeLine(line, bootEl);
+        await wait(80 + Math.random()*220);
+      }
+      authSection.style.display = '';
+      uEl.focus();
+    }
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      authLog.textContent = '';
+      const u = (uEl.value || '').trim();
+      const p = (pEl.value || '');
+      print(authLog, `[AUTH] Zpracovávám přihlašovací údaje uživatele '${u || 'anonym'}'...`);
+      const calc = await sha256Hex(`${u}:${p}`);
+      if (calc === VALID_HASH){
+        print(authLog, `[AUTH] Uživatelský profil ověřen.`);
+        await wait(220);
+        grantAccess(u);
+      } else {
+        printHTML(authLog, `<span class="err">[AUTH] Přístup odepřen. Neplatné údaje pro '${escapeHtml(u) || 'anonym'}'.</span>`);
+        authForm.classList.remove('shake'); void authForm.offsetWidth;
+        authForm.classList.add('shake');
+        pEl.select(); pEl.focus();
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l'){
+        uEl.value = ''; pEl.value = ''; authLog.textContent = ''; e.preventDefault();
+      }
+    });
+    async function grantAccess(username){
+      authSection.style.display = 'none';
+      redirectSection.style.display = 'grid';
+      redirectSection.removeAttribute('aria-hidden');
+      const steps = [
+        { t: 0,   text: `<span class="ok">[ACCESS] Přístup povolen.</span>`, html: true },
+        { t: 400, text: `[SESSION] Vítej zpět, ${escapeHtml(username)}.` },
+        { t: 900, text: `[SECURE] Otevírám šifrovaný kanál...` },
+        { t: 1500, text: `[ROUTE] Připravuji přesměrování na další uzel...` },
+        { t: 2200, text: `[SYNC] Načítám modul mise...` },
+        { t: 3000, text: `[READY] Dokončeno. Přecházím.` }
+      ];
+      redirectLog.textContent = '';
+      const start = performance.now();
+      const totalDuration = 3600, endDelay = 400;
+      function raf(now){
+        const elapsed = now - start;
+        const pct = Math.max(0, Math.min(1, elapsed / totalDuration));
+        meterFill.style.width = (pct * 100).toFixed(1) + '%';
+        for (const s of steps){ if (!s.done && elapsed >= s.t){ s.html ? printHTML(redirectLog, s.text) : print(redirectLog, s.text); s.done = true; } }
+        if (elapsed < totalDuration) requestAnimationFrame(raf);
+      }
+      requestAnimationFrame(raf);
+      await wait(totalDuration + endDelay);
+      window.location.href = NEXT_URL;
+    }
+
+    // OPRAVA: Spustí bootovací sekvenci po načtení stránky:
+    window.addEventListener('DOMContentLoaded', runBoot);
+  </script>
+</body>
+</html>
