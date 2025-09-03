@@ -110,12 +110,14 @@
       <div class="term__body" id="term">
         <section id="boot" class="log" aria-live="polite"></section>
         <section id="authSection" aria-live="polite">
-          <div class="log"><span class="muted">auth@node</span>:<span class="accent">~</span>$ login</div>
+          <div class="log">
+            <span class="muted">auth@node</span>:<span class="accent">~</span>$ login
+          </div>
           <form id="authForm" class="auth" autocomplete="off">
             <label for="u" class="label">Uživatel</label>
-            <input id="u" name="u" class="input" inputmode="text" spellcheck="false" autocapitalize="none" required />
+            <input id="u" name="u" class="input" inputmode="text" spellcheck="false" autocapitalize="none" autocomplete="username" required />
             <label for="p" class="label">Heslo</label>
-            <input id="p" name="p" class="input" type="password" required />
+            <input id="p" name="p" class="input" type="password" autocomplete="current-password" required />
             <button class="btn" type="submit">Ověřit</button>
           </form>
           <div id="authLog" class="log" aria-live="polite"></div>
@@ -233,8 +235,6 @@
       await wait(totalDuration + endDelay);
       window.location.href = NEXT_URL;
     }
-
-    // OPRAVA: Spustí bootovací sekvenci po načtení stránky:
     window.addEventListener('DOMContentLoaded', runBoot);
   </script>
 </body>
