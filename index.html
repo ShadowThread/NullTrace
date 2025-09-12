@@ -209,33 +209,4 @@
         uEl.value = ''; pEl.value = ''; authLog.textContent = ''; e.preventDefault();
       }
     });
-    async function grantAccess(username){
-      authSection.style.display = 'none';
-      redirectSection.style.display = 'grid';
-      redirectSection.removeAttribute('aria-hidden');
-      const steps = [
-        { t: 0,   text: `<span class="ok">[ACCESS] Přístup povolen.</span>`, html: true },
-        { t: 400, text: `[SESSION] Vítej zpět, ${escapeHtml(username)}.` },
-        { t: 900, text: `[SECURE] Otevírám šifrovaný kanál...` },
-        { t: 1500, text: `[ROUTE] Připravuji přesměrování na další uzel...` },
-        { t: 2200, text: `[SYNC] Načítám modul mise...` },
-        { t: 3000, text: `[READY] Dokončeno. Přecházím.` }
-      ];
-      redirectLog.textContent = '';
-      const start = performance.now();
-      const totalDuration = 3600, endDelay = 400;
-      function raf(now){
-        const elapsed = now - start;
-        const pct = Math.max(0, Math.min(1, elapsed / totalDuration));
-        meterFill.style.width = (pct * 100).toFixed(1) + '%';
-        for (const s of steps){ if (!s.done && elapsed >= s.t){ s.html ? printHTML(redirectLog, s.text) : print(redirectLog, s.text); s.done = true; } }
-        if (elapsed < totalDuration) requestAnimationFrame(raf);
-      }
-      requestAnimationFrame(raf);
-      await wait(totalDuration + endDelay);
-      window.location.href = NEXT_URL;
-    }
-    window.addEventListener('DOMContentLoaded', runBoot);
-  </script>
-</body>
-</html>
+    
